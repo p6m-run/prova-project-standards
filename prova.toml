@@ -1,0 +1,21 @@
+# One manifest, two hats: this package exports `require("project-standards")` (init.lua) and runs its
+# own self-test (proofs/).
+[package]
+name        = "project-standards"
+description = "p6m project standards, as proofs"
+license     = "MIT"
+
+# The org floor (standards.defaults.prova_floor) — the package meets the bar it sets.
+[requires]
+prova = ">= 0.30"
+
+# Resolve THIS package from its own directory, so the self-test requires it exactly as a consumer
+# does. A CONSUMER pins the released floating major instead:
+#   project-standards = { git = "https://github.com/p6m-run/prova-project-standards", tag = "v1" }
+[dependencies]
+project-standards = { path = "." }
+
+# The self-test is hermetic: the runner promises nothing beyond prova itself. (`cargo/formatted`'s
+# own falsifier needs cargo and skips, visibly, without it.)
+[profiles.ci]
+must_run = []
