@@ -227,6 +227,19 @@ prova.test("cargo/formatted fails on an unformatted crate", { requires = { "carg
 	t:expect(#judge("cargo/formatted", project(t, nil, "formatted")).failures):equals(0)
 end)
 
+-- ── A consumer's view: one real run of a project that adopts the package ──────────────────────
+
+prova.test("a failing rule tells the reader why it exists, in a real run", function(t)
+	local root = project(t, {
+		["README.md"] = false,
+		["proofs/standards.prova.lua"] = 'require("project-standards").check {}\n',
+		[".prova/prova.toml"] = MANIFEST .. ('\n[dependencies]\nproject-standards = { path = "%s" }\n'):format(prova.root),
+	}, "consumer")
+	local r = shell.run({ prova.bin, "--tags", "static" }, { cwd = root, merge_stderr = true, timeout = "120s" })
+	t:expect(r.code, "the run is red: " .. r.stdout):equals(1)
+	t:expect(r.stdout, "the failure leads with the rule id and its reason"):contains("repo/readme — the first question about any repository")
+end)
+
 -- ── Profiles and waivers ───────────────────────────────────────────────────────────────────────
 
 prova.test("profiles come from what is on disk", function(t)

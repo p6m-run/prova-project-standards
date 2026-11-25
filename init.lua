@@ -626,6 +626,26 @@ function standards.waiver(w, today)
 	return "waived", "waived without a reason — say why in `except`"
 end
 
+--- `t`, with every expectation led by the rule's id and reason, so a failure says why the rule
+--- exists and not only what was found. Everything else passes through to the real context.
+local function reasoned(t, r)
+	return setmetatable({
+		expect = function(_, v, msg)
+			return t:expect(v, ("%s — %s\n%s"):format(r.id, r.why, msg or ""))
+		end,
+	}, {
+		__index = function(_, k)
+			local f = t[k]
+			if type(f) == "function" then
+				return function(_, ...)
+					return f(t, ...)
+				end
+			end
+			return f
+		end,
+	})
+end
+
 --- The keys a project's own suite may pass. Anything else (the floors, the lint list) is the
 --- standards' own, so a repository cannot lower its own bar from inside the check.
 standards.REPO_OPTS = { root = true, label = true, except = true, profiles = true, today = true }
@@ -703,7 +723,7 @@ function standards.check(opts)
 					end
 					return t:skip(r.id .. " " .. text)
 				end
-				r.check(t, { project = project, cfg = cfg, fixtures = fixtures })
+				r.check(reasoned(t, r), { project = project, cfg = cfg, fixtures = fixtures })
 			end)
 		end
 	end)
